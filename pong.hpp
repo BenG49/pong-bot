@@ -1,5 +1,4 @@
 #include <SFML/Graphics.hpp>
-#include <stdlib.h>
 #include <cmath>
 
 #include <iostream>
@@ -11,9 +10,12 @@
 #define LEFT 0
 #define RIGHT 1
 
+using namespace std;
+using namespace sf;
+
 struct Game
 {
-    sf::Vector2u size;
+    Vector2u size;
     float lPos;
     float rPos;
     float ballX;
@@ -31,7 +33,7 @@ enum PlayerMoveState
     NONE
 };
 
-const sf::Vector2f PADDLE_SIZE(10, 70);
+const Vector2f PADDLE_SIZE(10, 70);
 const int PADDLE_WALL_GAP = 10;
 const int MAX_ANGLE = 45;
 const float PADDLE_BOUNCE = 1.1;
@@ -44,7 +46,7 @@ double degToRad(int deg)
     return deg * (M_PI / 180);
 }
 
-void setGame(struct Game *game, sf::Vector2u size, int lScore, int rScore)
+void setGame(struct Game *game, Vector2u size, int lScore, int rScore)
 {
     game->size = size;
     game->lPos = 0;
@@ -76,11 +78,11 @@ bool withinPaddle(struct Game *game, int player, float ballY)
 }
 
 void updateGame(struct Game *game,
-                PlayerMoveState (*l)(float l, float r, float ballX, float ballY, sf::Vector2u size),
-                PlayerMoveState (*r)(float l, float r, float ballX, float ballY, sf::Vector2u size))
+                PlayerMoveState (*l)(float self, float other, float xDist, float ballY, Vector2u size),
+                PlayerMoveState (*r)(float self, float other, float xDist, float ballY, Vector2u size))
 {
-    float newX = game->ballX + game->ballSpeed * std::cos(degToRad(game->ballAngle));
-    float newY = game->ballY + game->ballSpeed * std::sin(degToRad(game->ballAngle));
+    float newX = game->ballX + game->ballSpeed * cos(degToRad(game->ballAngle));
+    float newY = game->ballY + game->ballSpeed * sin(degToRad(game->ballAngle));
 
     float rightWall = game->size.x / 2.f;
 
@@ -110,15 +112,15 @@ void updateGame(struct Game *game,
         game->ballAngle = (rand() % (180 - MAX_ANGLE * 2) + 270 + MAX_ANGLE) % 360;
     }
     // right paddle
-    if (newX > rightWall - PADDLE_WALL_GAP - PADDLE_SIZE.x && withinPaddle(game, RIGHT, newY))
+    if (newX + BALL_SIZE > rightWall - PADDLE_WALL_GAP - PADDLE_SIZE.x && withinPaddle(game, RIGHT, newY))
     {
         game->ballSpeed *= PADDLE_BOUNCE;
         game->ballAngle = rand() % (180 - MAX_ANGLE * 2) + 90 + MAX_ANGLE;
     }
 
     // update paddles
-    PlayerMoveState left = l(game->lPos, game->rPos, game->ballX, game->ballY, game->size);
-    PlayerMoveState right = r(game->lPos, game->rPos, game->ballX, game->ballY, game->size);
+    PlayerMoveState left = l(game->lPos, game->rPos, game->ballX - (rightWall - PADDLE_WALL_GAP - PADDLE_SIZE.x), game->ballY, game->size);
+    PlayerMoveState right = r(game->rPos, game->lPos, game->ballX - (-rightWall + PADDLE_WALL_GAP + PADDLE_SIZE.x), game->ballY, game->size);
 
     if (left == UP && game->lPos - PADDLE_SIZE.y / 2.f > -bottomWall)
         game->lPos -= PADDLE_SPEED;
@@ -134,23 +136,23 @@ void updateGame(struct Game *game,
     game->ballY = newY;
 }
 
-void drawGame(sf::RenderWindow *window, struct Game *game)
+void drawGame(RenderWindow *window, struct Game *game, Font font)
 {
-    sf::Vector2u size = window->getSize();
+    Vector2u size = window->getSize();
 
     // ball
-    sf::CircleShape ball(BALL_SIZE);
-    ball.setPosition(sf::Vector2f(game->ballX - ball.getRadius() / 2.f, game->ballY - ball.getRadius() / 2.f));
+    CircleShape ball(BALL_SIZE);
+    ball.setPosition(Vector2f(game->ballX - ball.getRadius() / 2.f, game->ballY - ball.getRadius() / 2.f));
     window->draw(ball);
 
     // paddles
-    sf::RectangleShape l(PADDLE_SIZE);
-    sf::RectangleShape r(PADDLE_SIZE);
+    RectangleShape l(PADDLE_SIZE);
+    RectangleShape r(PADDLE_SIZE);
 
-    l.setPosition(sf::Vector2f(
+    l.setPosition(Vector2f(
         -(size.x / 2.f) + PADDLE_WALL_GAP,
         game->lPos - PADDLE_SIZE.y / 2));
-    r.setPosition(sf::Vector2f(
+    r.setPosition(Vector2f(
         size.x / 2.f - PADDLE_WALL_GAP - PADDLE_SIZE.x,
         game->rPos - PADDLE_SIZE.y / 2));
 
@@ -158,8 +160,27 @@ void drawGame(sf::RenderWindow *window, struct Game *game)
     window->draw(r);
 
     // center line
-    sf::RectangleShape line(sf::Vector2f(2, size.y));
-    line.setFillColor(sf::Color(255, 255, 255, 100));
-    line.setPosition(sf::Vector2f(line.getSize().x / 2.f, -(size.y / 2.f)));
+    RectangleShape line(Vector2f(2, size.y));
+    line.setFillColor(Color(255, 255, 255, 100));
+    line.setPosition(Vector2f(line.getSize().x / 2.f, -(size.y / 2.f)));
     window->draw(line);
+
+    // scores
+    Text left;
+    Text right;
+
+    left.setFont(font);
+    right.setFont(font);
+
+    left.setCharacterSize(24);
+    right.setCharacterSize(24);
+
+    left.setString(to_string(game->lScore));
+    right.setString(to_string(game->rScore));
+
+    left.setPosition(-30, -(game->size.y / 2.f) + 5);
+    right.setPosition(20, -(game->size.y / 2.f) + 5);
+
+    window->draw(left);
+    window->draw(right);
 }

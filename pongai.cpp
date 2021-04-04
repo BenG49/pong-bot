@@ -1,21 +1,14 @@
 #include <SFML/Graphics.hpp>
 #include <stdlib.h>
+#include <thread>
+#include <chrono>
 #include "pong.hpp"
 
-PlayerMoveState stupidLeft(float l, float r, float ballX, float ballY, sf::Vector2u size)
+PlayerMoveState stupid(float self, float other, float xDist, float ballY, Vector2u size)
 {
-    if (l < ballY)
+    if (self < ballY)
         return DOWN;
-    if (l > ballY)
-        return UP;
-
-    return NONE;
-}
-PlayerMoveState stupidRight(float l, float r, float ballX, float ballY, sf::Vector2u size)
-{
-    if (r < ballY)
-        return DOWN;
-    if (r > ballY)
+    if (self > ballY)
         return UP;
 
     return NONE;
@@ -24,9 +17,13 @@ PlayerMoveState stupidRight(float l, float r, float ballX, float ballY, sf::Vect
 int main()
 {
     srand(time(NULL));
-    sf::RenderWindow window(sf::VideoMode(440, 280), "pong", sf::Style::Titlebar);
-    sf::Vector2u size = window.getSize();
-    sf::View view(sf::FloatRect(-(size.x / 2.f), -(size.y / 2.f), size.x, size.y));
+    RenderWindow window(VideoMode(440, 280), "pong", Style::Titlebar);
+    Vector2u size = window.getSize();
+    View view(FloatRect(-(size.x / 2.f), -(size.y / 2.f), size.x, size.y));
+
+    Font font;
+    if (!font.loadFromFile("/usr/share/fonts/CascadiaMono.ttf"))
+        throw;
 
     window.setView(view);
 
@@ -35,24 +32,39 @@ int main()
 
     while (window.isOpen())
     {
-        sf::Event event;
+        Event event;
         while (window.pollEvent(event))
-            if (event.type == sf::Event::Closed)
+            if (event.type == Event::Closed)
                 window.close();
 
-        updateGame(game, &stupidLeft, &stupidRight);
+        updateGame(game, &stupid, &stupid);
 
         window.clear();
-
         if (game->state == PLAY)
-            drawGame(&window, game);
-        else if (game->state == L_WIN)
         {
-        }
-        else if (game->state == R_WIN)
+            drawGame(&window, game, font);
+            window.display();
+        } else if (game->state == L_WIN || game->state == R_WIN)
         {
+            Text text;
+            text.setFont(font);
+            if (game->state == L_WIN)
+            {
+                text.setString("Left Win!");
+                setGame(game, game->size, game->lScore+1, game->rScore);
+            } else if (game->state == R_WIN)
+            {
+                text.setString("Right Win!");
+                setGame(game, game->size, game->lScore, game->rScore+1);
+            }
+            text.setCharacterSize(24);
+
+            window.draw(text);
+            window.display();
+
+            this_thread::sleep_for (chrono::seconds(1));
+
         }
 
-        window.display();
     }
 }
