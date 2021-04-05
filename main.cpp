@@ -22,7 +22,7 @@ int main()
     View view(FloatRect(-(size.x / 2.f), -(size.y / 2.f), size.x, size.y));
 
     Font font;
-    if (!font.loadFromFile("/usr/share/fonts/CascadiaMono.ttf"))
+    if (!font.loadFromFile("/usr/share/fonts/CascadiaCode.ttf"))
         throw;
 
     window.setView(view);

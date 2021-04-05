@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
-g++ -c $1.cpp
-g++ $1.o -o $1 -lsfml-graphics -lsfml-window -lsfml-system
-./$1
+g++ -c main.cpp
+g++ main.o -o main -lsfml-graphics -lsfml-window -lsfml-system
+./main
