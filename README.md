@@ -1,1 +1,1 @@
-# pong-ai
+# pong-bot
